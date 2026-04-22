@@ -13,7 +13,7 @@ Thank you for your interest in DuoNet! This is a community-driven project, and e
 ## Development Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/duonet.git
+git clone https://github.com/UserName19616/duonet.git
 cd duonet
 python3 -m venv venv
 source venv/bin/activate

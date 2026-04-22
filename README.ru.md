@@ -132,7 +132,7 @@ DuoNet — это экспериментальная **децентрализо�
 
 ```bash
 # Клонируйте репозиторий (замените на актуальный URL)
-git clone https://github.com/ВАШ_USERNAME/duonet.git
+git clone https://github.com/UserName19616/duonet.git
 cd duonet
 
 # Запустите установщик (создаёт venv, генерирует SSL сертификаты, настраивает БД)
@@ -239,7 +239,7 @@ DevOps	Docker образы, CI/CD, гайды по развертыванию
 Настройка окружения для разработки
 bash
 # Форкните и клонируйте репозиторий
-git clone https://github.com/ВАШ_USERNAME/duonet.git
+git clone https://github.com/UserName19616/duonet.git
 cd duonet
 
 # Создайте виртуальное окружение
