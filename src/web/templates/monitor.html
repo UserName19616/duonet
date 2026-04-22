@@ -1,0 +1,612 @@
+{% extends "base.html" %}
+
+{% block title %}Мониторинг сервера{% endblock %}
+
+{% block content %}
+<style>
+    .status-online {
+        color: #10b981;
+    }
+    .status-offline {
+        color: #6b7280;
+    }
+    .status-connecting {
+        color: #f59e0b;
+    }
+    .server-card {
+        transition: all 0.2s ease;
+    }
+    .server-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .log-line {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        border-bottom: 1px solid #2d2d2d;
+        padding: 4px 8px;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .log-line:hover {
+        background: #2a2a2a;
+    }
+    .log-info { color: #6ee7b7; }
+    .log-warning { color: #fcd34d; }
+    .log-error { color: #f87171; }
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success { background: #10b981; }
+    .toast-error { background: #ef4444; }
+    .toast-info { background: #3b82f6; }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .peer-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    .peer-connected {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    .peer-disconnected {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    .peer-connecting {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 10px 8px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+        background: #f9fafb;
+        font-weight: 600;
+    }
+    .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .btn-icon:hover {
+        background: #e5e7eb;
+    }
+    .btn-icon:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-4">🖥️ Мониторинг сервера</h2>
+
+    <!-- Базовый статус -->
+    <div class="mt-4 p-4 bg-gray-100 rounded server-card">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+            <div>
+                <p class="text-gray-700">Серверный ID:</p>
+                <p class="font-mono text-sm font-bold break-all" id="server-id-display">Загрузка...</p>
+            </div>
+            <div>
+                <p class="text-gray-700">Статус:</p>
+                <p class="text-green-600 font-bold" id="server-status">● Активен</p>
+            </div>
+            <div>
+                <p class="text-gray-700">Тип сети:</p>
+                <p class="font-medium" id="network-type">-</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информация о сервере для подключения -->
+    <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+        <h3 class="text-lg font-bold mb-3">📋 Мои данные для подключения</h3>
+        <div class="bg-gray-800 text-green-400 font-mono text-sm p-3 rounded break-all" id="my-ws-url">
+            Загрузка...
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button id="copy-my-data" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition">
+                📋 Скопировать (JSON)
+            </button>
+            <button id="export-my-data" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+                📎 Экспорт ссылкой
+            </button>
+        </div>
+        <div class="mt-2 text-xs text-gray-500">
+            <span id="local-ips-info"></span>
+            <span id="public-ip-info" class="ml-3"></span>
+        </div>
+    </div>
+
+    <!-- Подключение к другому серверу -->
+    <div class="mt-4 p-4 border-2 border-dashed border-gray-300 rounded-lg">
+        <h3 class="text-lg font-bold mb-3">🔗 Подключиться к другому серверу</h3>
+        <textarea id="peer-data" placeholder='Вставьте данные сервера (JSON или ссылку duo://connect?...)
+Пример JSON:
+{"peer_id": "@SERVER.ru.srv", "ws_url": "wss://192.168.1.100:8443/ws", "region": "ru"}'
+                  class="w-full px-3 py-2 border rounded font-mono text-sm" rows="4"></textarea>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button id="parse-peer" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition">
+                🔍 Распознать
+            </button>
+            <button id="add-peer" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">
+                ➕ Добавить пира
+            </button>
+        </div>
+        <div id="parse-result" class="mt-2 text-sm"></div>
+    </div>
+
+    <!-- Таблица подключенных серверов (пиры) -->
+    <div class="mt-4 p-4 border rounded-lg">
+        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+            <h3 class="text-lg font-bold">🖥️ Мои пиры (подключенные серверы)</h3>
+            <button id="reconnect-all" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition">
+                🔄 Переподключить всех
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-3 py-2 text-left">Peer ID</th>
+                        <th class="px-3 py-2 text-left">WebSocket URL</th>
+                        <th class="px-3 py-2 text-left">Регион</th>
+                        <th class="px-3 py-2 text-left">Статус</th>
+                        <th class="px-3 py-2 text-left">Последний контакт</th>
+                        <th class="px-3 py-2 text-center">Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="peers-list">
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-gray-500">
+                            <div class="flex justify-center">
+                                <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Загрузка пиров...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Панель логов Rendezvous -->
+    <div class="mt-4 p-4 border rounded-lg">
+        <h3 class="text-lg font-bold mb-3">📋 Лог Rendezvous сервера</h3>
+        <div id="logPanel" class="bg-black text-green-400 font-mono text-xs p-3 rounded h-80 overflow-y-auto">
+            <div>✨ Подключение к логам...</div>
+        </div>
+        <div class="flex gap-2 mt-2">
+            <button id="btnClearLogs" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition">
+                🗑 Очистить
+            </button>
+            <button id="btnCopyLogs" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition">
+                📋 Копировать
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-6 flex space-x-3">
+        <a href="/accounts" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
+            ← Назад к выбору аккаунта
+        </a>
+        <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+            Выйти
+        </a>
+    </div>
+</div>
+
+<script>
+    const token = "{{ token }}";
+    let ws = null;
+    let reconnectAttempts = 0;
+
+    // ========== Утилиты ==========
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showToast(message, type = 'info') {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ========== Загрузка информации о сервере ==========
+    async function loadServerInfo() {
+        try {
+            const response = await fetch('/api/web/monitor/server-info');
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('server-id-display').textContent = data.data?.server_id || 'Неизвестно';
+                document.getElementById('my-ws-url').textContent = data.data?.ws_url || 'Недоступно';
+                document.getElementById('network-type').textContent = data.data?.is_public ? '🌍 Публичный IP' : '🏠 Локальная сеть (NAT)';
+
+                const localIps = data.data?.local_ips || [];
+                document.getElementById('local-ips-info').innerHTML = localIps.length ?
+                    `🏠 Локальные IP: ${localIps.join(', ')}` : '🏠 Локальные IP: не определены';
+
+                document.getElementById('public-ip-info').innerHTML = data.data?.public_ip ?
+                    `🌍 Публичный IP: ${data.data.public_ip}` : '🌍 Публичный IP: нет (NAT)';
+            }
+        } catch (error) {
+            console.error('Failed to load server info:', error);
+        }
+    }
+
+    // ========== Управление пирами ==========
+    async function loadPeers() {
+        try {
+            const response = await fetch('/api/peers/list');
+            const data = await response.json();
+
+            const tbody = document.getElementById('peers-list');
+            if (!tbody) return;
+
+            if (data.success && data.peers && data.peers.length) {
+                tbody.innerHTML = data.peers.map(p => {
+                    let statusClass = '';
+                    let statusText = '';
+                    let statusIcon = '';
+
+                    switch(p.status) {
+                        case 'connected':
+                            statusClass = 'peer-connected';
+                            statusText = 'Подключён';
+                            statusIcon = '🟢';
+                            break;
+                        case 'connecting':
+                            statusClass = 'peer-connecting';
+                            statusText = 'Подключение...';
+                            statusIcon = '🟡';
+                            break;
+                        default:
+                            statusClass = 'peer-disconnected';
+                            statusText = 'Отключён';
+                            statusIcon = '⚪';
+                    }
+
+                    return `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-3 py-2 font-mono text-xs break-all">${escapeHtml(p.peer_id)}</td>
+                            <td class="px-3 py-2 font-mono text-xs break-all">${escapeHtml(p.ws_url)}</td>
+                            <td class="px-3 py-2">${escapeHtml(p.region)}</td>
+                            <td class="px-3 py-2">
+                                <span class="peer-status-badge ${statusClass}">
+                                    ${statusIcon} ${statusText}
+                                </span>
+                            </td>
+                            <td class="px-3 py-2 text-xs text-gray-500">
+                                ${p.last_connected ? new Date(p.last_connected * 1000).toLocaleString() : '-'}
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                                <button onclick="connectToPeer('${escapeHtml(p.peer_id)}')"
+                                        class="btn-icon" title="Подключиться" ${p.status === 'connected' ? 'disabled' : ''}>
+                                    🔌
+                                </button>
+                                <button onclick="disconnectFromPeer('${escapeHtml(p.peer_id)}')"
+                                        class="btn-icon" title="Отключить">
+                                    🔌
+                                </button>
+                                <button onclick="deletePeer('${escapeHtml(p.peer_id)}')"
+                                        class="btn-icon" title="Удалить">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">📭 Нет добавленных пиров</td></tr>';
+            }
+        } catch (error) {
+            console.error('Failed to load peers:', error);
+            document.getElementById('peers-list').innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-500">❌ Ошибка загрузки пиров</td></tr>';
+        }
+    }
+
+    async function connectToPeer(peerId) {
+        try {
+            const response = await fetch(`/api/peers/${encodeURIComponent(peerId)}/connect`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message || `Подключение к ${peerId}`, 'success');
+                loadPeers();
+            } else {
+                showToast(data.error || 'Ошибка подключения', 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function disconnectFromPeer(peerId) {
+        try {
+            const response = await fetch(`/api/peers/${encodeURIComponent(peerId)}/disconnect`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message || `Отключено от ${peerId}`, 'success');
+                loadPeers();
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function deletePeer(peerId) {
+        if (!confirm(`Удалить пир ${peerId}?`)) return;
+
+        try {
+            const response = await fetch(`/api/peers/${encodeURIComponent(peerId)}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message || `Пир ${peerId} удалён`, 'success');
+                loadPeers();
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function reconnectAll() {
+        try {
+            const response = await fetch('/api/peers/reconnect-all', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message || 'Переподключение запущено', 'success');
+                loadPeers();
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    // Парсинг вставленных данных
+    function parsePeerData() {
+        const input = document.getElementById('peer-data').value.trim();
+        const resultDiv = document.getElementById('parse-result');
+
+        if (!input) {
+            resultDiv.innerHTML = '<span class="text-yellow-500">⚠️ Введите данные</span>';
+            return null;
+        }
+
+        let peerData = null;
+        let error = null;
+
+        try {
+            // Пробуем JSON
+            peerData = JSON.parse(input);
+        } catch {
+            // Пробуем ссылку duo://connect?...
+            if (input.startsWith('duo://connect?')) {
+                try {
+                    const params = new URLSearchParams(input.split('?')[1]);
+                    peerData = {
+                        peer_id: params.get('peer_id'),
+                        ws_url: params.get('ws_url'),
+                        region: params.get('region') || 'ru'
+                    };
+                } catch (e) {
+                    error = 'Неверный формат ссылки';
+                }
+            } else {
+                error = 'Неверный формат данных. Ожидается JSON или duo://connect?...';
+            }
+        }
+
+        if (error || !peerData) {
+            resultDiv.innerHTML = `<span class="text-red-500">❌ ${error || 'Не удалось распознать'}</span>`;
+            return null;
+        }
+
+        if (!peerData.peer_id || !peerData.ws_url) {
+            resultDiv.innerHTML = '<span class="text-red-500">❌ Отсутствуют обязательные поля: peer_id, ws_url</span>';
+            return null;
+        }
+
+        resultDiv.innerHTML = `
+            <div class="bg-green-50 p-2 rounded">
+                <span class="text-green-600">✅ Распознано:</span><br>
+                <span class="font-mono text-xs">Peer ID: ${escapeHtml(peerData.peer_id)}</span><br>
+                <span class="font-mono text-xs">WS URL: ${escapeHtml(peerData.ws_url)}</span><br>
+                <span class="font-mono text-xs">Регион: ${escapeHtml(peerData.region || 'ru')}</span>
+            </div>
+        `;
+
+        return peerData;
+    }
+
+    async function addPeer() {
+        const peerData = parsePeerData();
+        if (!peerData) return;
+
+        try {
+            const response = await fetch('/api/peers/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(peerData)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showToast(data.message || `Пир ${peerData.peer_id} добавлен`, 'success');
+                document.getElementById('peer-data').value = '';
+                document.getElementById('parse-result').innerHTML = '';
+                loadPeers();
+            } else {
+                showToast(data.error || 'Ошибка добавления', 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    function copyMyData() {
+        const wsUrl = document.getElementById('my-ws-url').textContent;
+        const peerId = document.getElementById('server-id-display').textContent;
+
+        const exportData = {
+            peer_id: peerId,
+            ws_url: wsUrl,
+            region: 'ru'
+        };
+
+        navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+        showToast('✅ Данные скопированы в буфер обмена', 'success');
+    }
+
+    function exportMyData() {
+        const wsUrl = document.getElementById('my-ws-url').textContent;
+        const peerId = document.getElementById('server-id-display').textContent;
+        const link = `duo://connect?peer_id=${encodeURIComponent(peerId)}&ws_url=${encodeURIComponent(wsUrl)}&region=ru`;
+
+        navigator.clipboard.writeText(link);
+        showToast('✅ Ссылка скопирована', 'success');
+    }
+
+    // ========== Логи Rendezvous ==========
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/api/web/ws/rendezvous_logs?token=${token}`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            reconnectAttempts = 0;
+            addLog('✅ Подключен к логам Rendezvous сервера');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'log') {
+                addLog(data.data);
+            } else if (data.type === 'status') {
+                updateStatus(data.data.status, data.data.message);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            addLog('❌ Ошибка WebSocket соединения');
+        };
+
+        ws.onclose = () => {
+            addLog('⚠️ Соединение с логами потеряно, переподключение...');
+            setTimeout(() => {
+                if (reconnectAttempts < 10) {
+                    reconnectAttempts++;
+                    connectWebSocket();
+                }
+            }, 3000);
+        };
+    }
+
+    function addLog(message) {
+        const panel = document.getElementById('logPanel');
+        const time = new Date().toLocaleTimeString();
+
+        let logClass = 'log-info';
+        if (message.includes('ERROR') || message.includes('❌')) logClass = 'log-error';
+        else if (message.includes('WARNING') || message.includes('⚠️')) logClass = 'log-warning';
+
+        panel.innerHTML += `<div class="log-line ${logClass}">[${time}] ${escapeHtml(message)}</div>`;
+        panel.scrollTop = panel.scrollHeight;
+
+        const lines = panel.innerHTML.split('</div>');
+        if (lines.length > 500) {
+            panel.innerHTML = lines.slice(-500).join('</div>');
+        }
+    }
+
+    function updateStatus(status, message) {
+        const statusEl = document.getElementById('server-status');
+        if (status === 'running') {
+            statusEl.innerHTML = '● Активен';
+            statusEl.className = 'text-green-600 font-bold';
+        } else if (status === 'stopped') {
+            statusEl.innerHTML = '● Остановлен';
+            statusEl.className = 'text-red-600 font-bold';
+        } else if (status === 'error') {
+            statusEl.innerHTML = '⚠️ Ошибка';
+            statusEl.className = 'text-red-600 font-bold';
+        }
+    }
+
+    function clearLogs() {
+        document.getElementById('logPanel').innerHTML = '<div>🧹 Лог очищен</div>';
+        addLog('Лог очищен');
+    }
+
+    function copyLogs() {
+        const panel = document.getElementById('logPanel');
+        const text = panel.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            addLog('📋 Лог скопирован в буфер обмена');
+        }).catch(() => {
+            addLog('❌ Не удалось скопировать лог');
+        });
+    }
+
+    // ========== Инициализация ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        loadServerInfo();
+        loadPeers();
+        connectWebSocket();
+
+        document.getElementById('btnClearLogs').onclick = clearLogs;
+        document.getElementById('btnCopyLogs').onclick = copyLogs;
+        document.getElementById('copy-my-data').onclick = copyMyData;
+        document.getElementById('export-my-data').onclick = exportMyData;
+        document.getElementById('parse-peer').onclick = parsePeerData;
+        document.getElementById('add-peer').onclick = addPeer;
+        document.getElementById('reconnect-all').onclick = reconnectAll;
+    });
+
+    // Периодическое обновление пиров
+    setInterval(() => {
+        loadPeers();
+    }, 30000);
+</script>
+{% endblock %}

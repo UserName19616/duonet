@@ -1,0 +1,190 @@
+{# src/web/templates/chat_full.html #}
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ contact_id }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/chat.css">
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Main chat panel -->
+    <div class="chat-panel">
+        <div class="header-info" id="headerInfo">
+            <div class="contact-info">
+                <span>💬 Chat with {{ contact_id }}</span>
+                <span id="onlineStatus" class="online-status status-offline">⚪ Checking...</span>
+            </div>
+            <div class="rotation-info" id="rotationInfo"></div>
+            <button id="rotateKeyBtn" class="warning" style="padding: 4px 12px; font-size: 11px;">
+                🔄 Update key
+            </button>
+        </div>
+
+        <div class="messages-area" id="messages">
+            <div class="loading">Loading messages...</div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator"></div>
+
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type a message..." maxlength="4096" disabled>
+            <button id="sendBtn" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- Crypto panel (encryption visualization) -->
+    <div class="crypto-panel">
+        <div class="message-details" id="messageDetails">
+            <p class="loading">Select a message to see details</p>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" id="filterAll" data-filter="all">All</button>
+            <button class="filter-btn" id="filterSent" data-filter="sent">Sent</button>
+            <button class="filter-btn" id="filterReceived" data-filter="received">Received</button>
+        </div>
+
+        <div class="packets-area" id="packets">
+            <div class="loading">No crypto packets yet</div>
+        </div>
+
+        <div class="phrase-area">
+            <span id="phraseStatus" class="phrase-status no-phrase">
+                <span id="phraseStatusText">🔓 No phrase</span>
+            </span>
+            <button id="setPhraseBtn" class="success">Set Phrase</button>
+            <button id="clearPhraseBtn" class="danger" style="display: none;">Clear</button>
+        </div>
+    </div>
+</div>
+
+<!-- Back button -->
+<a href="/contacts" class="back-button">← Back</a>
+
+<!-- Phrase input modal -->
+<div id="phraseModal" class="modal">
+    <div class="modal-content">
+        <h3>🔐 Enter secret phrase</h3>
+        <input type="password" id="phraseInput" placeholder="Enter phrase..." autocomplete="off">
+        <div class="modal-buttons">
+            <button id="phraseSubmit" class="success">Save</button>
+            <button id="phraseCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Error modal -->
+<div id="errorModal" class="modal">
+    <div class="modal-content">
+        <h3 id="errorTitle">⚠️ Error</h3>
+        <p id="errorMessage">An error occurred</p>
+        <div class="modal-buttons">
+            <button id="errorClose">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm modal for rotation -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <h3>🔄 Update encryption key?</h3>
+        <p>After key change, all new messages will be protected with the new key.<br>
+        The other party will be notified about the key change.</p>
+        <p class="rotation-info" id="cooldownInfo"></p>
+        <div class="modal-buttons">
+            <button id="confirmYes" class="warning">Yes, update</button>
+            <button id="confirmNo">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- System message modal -->
+<div id="systemMessageModal" class="modal">
+    <div class="modal-content">
+        <h3 id="sysMsgTitle">📢 System message</h3>
+        <div id="sysMsgContent"></div>
+        <div class="modal-buttons">
+            <button id="sysMsgClose">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts - ordered by dependency -->
+<!-- 1. External crypto library (tweetnacl for X25519) -->
+<script src="/static/js/lib/nacl.min.js"></script>
+
+<!-- 2. Core libraries -->
+<script src="/static/js/duonet-crypto.js"></script>
+<script src="/static/js/duonet-ui.js"></script>
+<script src="/static/js/duonet-websocket.js"></script>
+
+<!-- 3. Chat modules -->
+<script src="/static/js/chat/core.js"></script>
+<script src="/static/js/chat/messages.js"></script>
+<script src="/static/js/chat/system.js"></script>
+<script src="/static/js/chat/rotation.js"></script>
+
+<!-- 4. Facade (main entry point) -->
+<script src="/static/js/duonet-chat.js"></script>
+
+<script>
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactId = "{{ contact_id }}";
+    const tokenFromUrl = urlParams.get('token');
+    const token = tokenFromUrl || "{{ token }}";
+    const currentUserId = "{{ user.public_id }}";
+
+    // Global error handler to filter known WebSocket errors
+    window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('Unknown type: status')) {
+            console.warn('Ignored status type error:', e.message);
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Override console.error to filter status errors
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('Unknown type: status')) {
+            console.log('⚠️ Filtered status error:', args[0]);
+            return;
+        }
+        originalConsoleError.apply(console, args);
+    };
+
+    // Store for use in console debugging
+    window.currentUserId = currentUserId;
+
+    // Initialize chat when DOM is ready
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Check authentication
+        if (!token) {
+            console.error('No token found!');
+            const messagesDiv = document.getElementById('messages');
+            if (messagesDiv) {
+                messagesDiv.innerHTML = '<div class="error">Authentication error. Please <a href="/accounts">log in again</a>.</div>';
+            }
+            return;
+        }
+
+        // Create and initialize chat
+        const chat = new DuoNetChat(contactId, token, currentUserId);
+        window.currentChat = chat;
+
+        try {
+            await chat.init();
+            console.log('Chat initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize chat:', error);
+            const messagesDiv = document.getElementById('messages');
+            if (messagesDiv) {
+                messagesDiv.innerHTML = `<div class="error">Failed to initialize chat: ${error.message}</div>`;
+            }
+        }
+    });
+</script>
+{% endblock %}

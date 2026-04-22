@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}DuoNet - Контакты{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center">📇 Мои контакты</h2>
+
+    <!-- Поиск -->
+    <div class="mb-4">
+        <input type="text" id="searchInput" placeholder="Поиск по Public ID или @*.ru.srv"
+               class="w-full px-3 py-2 border border-gray-300 rounded">
+        <button id="searchBtn" class="mt-2 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+            🔍 Найти
+        </button>
+    </div>
+
+    <!-- Вкладки -->
+    <div class="flex mb-4 border rounded-lg overflow-hidden">
+        <button id="tab-contacts" class="flex-1 py-2 bg-blue-500 text-white">📇 Контакты</button>
+        <button id="tab-incoming" class="flex-1 py-2 bg-gray-200 text-gray-700">📥 Входящие</button>
+        <button id="tab-outgoing" class="flex-1 py-2 bg-gray-200 text-gray-700">📤 Отправленные</button>
+    </div>
+
+    <!-- Контейнер для контента -->
+    <div id="contactsList" class="space-y-2"></div>
+    <div id="invitesContainer" style="display: none;" class="space-y-2"></div>
+
+    <!-- Результаты поиска -->
+    <div id="searchResults" class="mt-4 space-y-2" style="display:none;">
+        <h3 class="font-bold text-lg">Результаты поиска:</h3>
+        <div id="searchResultsList"></div>
+        <button id="closeSearchResults" class="mt-2 text-gray-500 text-sm hover:text-gray-700">
+            ✖ Скрыть
+        </button>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования имени -->
+<div id="editNameModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-96">
+        <h3 class="text-lg font-bold mb-4">✏️ Редактировать имя контакта</h3>
+        <p class="text-sm text-gray-500 mb-2" id="editContactId"></p>
+        <input type="text" id="editNameInput" class="w-full px-3 py-2 border border-gray-300 rounded mb-4" placeholder="Введите имя">
+        <div class="flex justify-end space-x-2">
+            <button id="cancelEditBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Отмена</button>
+            <button id="saveEditBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для отправки приглашения -->
+<div id="sendInviteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-96 max-w-full">
+        <h3 class="text-lg font-bold mb-4">✉️ Отправить приглашение</h3>
+        <p class="text-sm text-gray-500 mb-2">Кому: <span id="inviteTargetPublicId" class="font-mono"></span></p>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Сообщение (макс. 200 символов)</label>
+            <textarea id="inviteMessage" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded"
+                      placeholder="Напишите пару слов о себе..."></textarea>
+            <div class="text-right text-xs text-gray-400"><span id="inviteMessageCounter">0</span>/200</div>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Локальное имя (видно только вам)</label>
+            <input type="text" id="inviteLocalName" class="w-full px-3 py-2 border border-gray-300 rounded"
+                   placeholder="Например: Алексей" value="Контакт">
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button id="cancelInviteBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Отмена</button>
+            <button id="sendInviteBtn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Отправить</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Core utilities first -->
+<script src="/static/js/duonet-common.js"></script>
+<script src="/static/js/duonet-api.js"></script>
+
+<!-- Feature modules -->
+<script src="/static/js/duonet-contacts.js"></script>
+<script src="/static/js/duonet-invites.js"></script>
+<script src="/static/js/duonet-search.js"></script>
+
+<!-- Main controller -->
+<script src="/static/js/duonet-dashboard.js"></script>
+{% endblock %}

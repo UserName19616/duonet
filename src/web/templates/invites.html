@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Приглашения{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center">📨 Приглашения</h2>
+
+    <!-- Переключатель между входящими и исходящими приглашениями -->
+    <div class="flex mb-4 border rounded-lg overflow-hidden">
+        <button id="tab-incoming" class="flex-1 py-2 bg-blue-500 text-white">📥 Входящие</button>
+        <button id="tab-outgoing" class="flex-1 py-2 bg-gray-200 text-gray-700">📤 Отправленные</button>
+    </div>
+
+    <!-- Контейнер для списка приглашений -->
+    <div id="invitesContainer" class="space-y-3">
+        <div class="text-center text-gray-500 py-8" id="loadingIndicator">
+            Загрузка...
+        </div>
+    </div>
+
+    <div class="mt-6 text-center">
+        <a href="/dialogs" class="text-blue-500 hover:text-blue-700">← Назад к диалогам</a>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра деталей приглашения -->
+<div id="inviteDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-96 max-w-full max-h-80 overflow-y-auto">
+        <h3 class="text-lg font-bold mb-2" id="inviteDetailTitle">📨 Детали приглашения</h3>
+        <div id="inviteDetailContent" class="space-y-3"></div>
+        <div class="flex justify-end space-x-2 mt-4">
+            <button id="closeInviteDetailBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const templateToken = "{{ token }}";
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function getToken() {
+        return sessionStorage.getItem('duonet_token') || getCookie('token');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded text-white z-50 ${
+            type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Текущая активная вкладка
+    let currentTab = 'incoming';
+    let currentDetailInviteId = null;
+    let currentDetailType = null;
+
+    // =========================================================================
+    // Загрузка входящих приглашений
+    // =========================================================================
+
+    async function loadIncomingInvites() {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const response = await fetch('/api/web/invites', {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('invitesContainer');
+
+            if (data.success && data.data.invites && data.data.invites.length > 0) {
+                let html = '';
+                for (const invite of data.data.invites) {
+                    const isExpired = invite.expires_at < Date.now() / 1000;
+                    const messagePreview = invite.message ?
+                        (invite.message.length > 60 ? invite.message.substring(0, 60) + '...' : invite.message) :
+                        'Без сообщения';
+
+                    html += `
+                        <div class="border rounded-lg p-4 ${isExpired ? 'bg-gray-100 opacity-60' : 'bg-white'} cursor-pointer hover:shadow-md transition"
+                             onclick="showInviteDetail('${invite.invite_id}', 'incoming')">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg">${escapeHtml(invite.from_id)}</div>
+                                    <div class="text-sm text-gray-500 italic mt-1">📝 "${escapeHtml(messagePreview)}"</div>
+                                    <div class="text-sm text-gray-400 mt-2">
+                                        Получено: ${new Date(invite.timestamp * 1000).toLocaleString()}
+                                        ${isExpired ? '<span class="ml-2 text-red-500">(Истекло)</span>' : ''}
+                                    </div>
+                                </div>
+                                ${!isExpired ? `
+                                <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); acceptInvite('${invite.invite_id}')"
+                                            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                        ✓ Принять
+                                    </button>
+                                    <button onclick="event.stopPropagation(); rejectInvite('${invite.invite_id}')"
+                                            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                                        ✗ Отклонить
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">📭 Нет входящих приглашений</div>';
+            }
+        } catch (error) {
+            console.error('Failed to load incoming invites:', error);
+            container.innerHTML = '<div class="text-center text-red-500 py-8">❌ Ошибка загрузки</div>';
+        }
+    }
+
+    // =========================================================================
+    // Загрузка отправленных приглашений
+    // =========================================================================
+
+    async function loadOutgoingInvites() {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const response = await fetch('/api/web/invites/sent', {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            const container = document.getElementById('invitesContainer');
+
+            if (data.success && data.data.invites && data.data.invites.length > 0) {
+                let html = '';
+                for (const invite of data.data.invites) {
+                    const isExpired = invite.expires_at < Date.now() / 1000;
+                    const isPending = invite.status === 'pending';
+                    const messagePreview = invite.message ?
+                        (invite.message.length > 60 ? invite.message.substring(0, 60) + '...' : invite.message) :
+                        'Без сообщения';
+
+                    html += `
+                        <div class="border rounded-lg p-4 bg-white cursor-pointer hover:shadow-md transition"
+                             onclick="showInviteDetail('${invite.invite_id}', 'outgoing')">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg">📤 ${escapeHtml(invite.to_id)}</div>
+                                    <div class="text-sm text-gray-500 italic mt-1">📝 "${escapeHtml(messagePreview)}"</div>
+                                    <div class="text-sm text-gray-400 mt-2">
+                                        Отправлено: ${new Date(invite.timestamp * 1000).toLocaleString()}
+                                        <span class="ml-2 px-2 py-0.5 rounded text-xs ${
+                                            invite.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            invite.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                            'bg-gray-100 text-gray-800'
+                                        }">${invite.status}</span>
+                                        ${isExpired ? '<span class="ml-2 text-red-500">(Истекло)</span>' : ''}
+                                    </div>
+                                </div>
+                                ${isPending && !isExpired ? `
+                                <button onclick="event.stopPropagation(); revokeInvite('${invite.invite_id}')"
+                                        class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 ml-4">
+                                    ↩ Отозвать
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">📤 Нет отправленных приглашений</div>';
+            }
+        } catch (error) {
+            console.error('Failed to load outgoing invites:', error);
+            container.innerHTML = '<div class="text-center text-red-500 py-8">❌ Ошибка загрузки</div>';
+        }
+    }
+
+    // =========================================================================
+    // Действия с приглашениями
+    // =========================================================================
+
+    async function acceptInvite(inviteId) {
+        const token = getToken();
+        if (!token) {
+            showToast('Ошибка авторизации', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/web/invites/${inviteId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('✅ Контакт добавлен!', 'success');
+                if (currentTab === 'incoming') {
+                    loadIncomingInvites();
+                }
+                closeInviteDetail();
+            } else {
+                showToast('❌ Ошибка: ' + (data.detail || data.error), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function rejectInvite(inviteId) {
+        const token = getToken();
+        if (!token) {
+            showToast('Ошибка авторизации', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/web/invites/${inviteId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('❌ Приглашение отклонено', 'success');
+                if (currentTab === 'incoming') {
+                    loadIncomingInvites();
+                }
+                closeInviteDetail();
+            } else {
+                showToast('Ошибка: ' + (data.detail || data.error), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    async function revokeInvite(inviteId) {
+        if (!confirm('Отозвать приглашение? Получатель не сможет его принять.')) return;
+
+        const token = getToken();
+        if (!token) {
+            showToast('Ошибка авторизации', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/web/invites/${inviteId}/revoke`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('✅ Приглашение отозвано', 'success');
+                if (currentTab === 'outgoing') {
+                    loadOutgoingInvites();
+                }
+                closeInviteDetail();
+            } else {
+                showToast('Ошибка: ' + (data.detail || data.error), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    }
+
+    // =========================================================================
+    // Модальное окно для просмотра деталей приглашения
+    // =========================================================================
+
+    function showInviteDetail(inviteId, type) {
+        currentDetailInviteId = inviteId;
+        currentDetailType = type;
+
+        const modal = document.getElementById('inviteDetailModal');
+        const title = document.getElementById('inviteDetailTitle');
+        const content = document.getElementById('inviteDetailContent');
+
+        content.innerHTML = '<div class="text-center py-4">Загрузка...</div>';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        fetchInviteDetails(inviteId, type);
+    }
+
+    async function fetchInviteDetails(inviteId, type) {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const response = await fetch(`/api/web/invites/${inviteId}/detail`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                const invite = data.data;
+                const isExpired = invite.expires_at < Date.now() / 1000;
+                const content = document.getElementById('inviteDetailContent');
+
+                if (type === 'incoming') {
+                    content.innerHTML = `
+                        <div class="border-b pb-2">
+                            <p class="font-bold">От:</p>
+                            <p class="font-mono break-all">${escapeHtml(invite.from_id)}</p>
+                        </div>
+                        <div class="border-b pb-2">
+                            <p class="font-bold">Сообщение:</p>
+                            <div class="bg-gray-50 p-2 rounded italic whitespace-pre-wrap break-words">${escapeHtml(invite.message || 'Без сообщения')}</div>
+                        </div>
+                        <div class="border-b pb-2">
+                            <p class="font-bold">Получено:</p>
+                            <p>${new Date(invite.timestamp * 1000).toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Истекает:</p>
+                            <p class="${isExpired ? 'text-red-500' : ''}">${new Date(invite.expires_at * 1000).toLocaleString()}</p>
+                        </div>
+                    `;
+                    if (!isExpired) {
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'flex gap-2 mt-4';
+                        actionsDiv.innerHTML = `
+                            <button id="modalAcceptBtn" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">✓ Принять</button>
+                            <button id="modalRejectBtn" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">✗ Отклонить</button>
+                        `;
+                        content.appendChild(actionsDiv);
+                        document.getElementById('modalAcceptBtn').onclick = () => { acceptInvite(inviteId); };
+                        document.getElementById('modalRejectBtn').onclick = () => { rejectInvite(inviteId); };
+                    }
+                } else {
+                    content.innerHTML = `
+                        <div class="border-b pb-2">
+                            <p class="font-bold">Кому:</p>
+                            <p class="font-mono break-all">${escapeHtml(invite.to_id)}</p>
+                        </div>
+                        <div class="border-b pb-2">
+                            <p class="font-bold">Сообщение:</p>
+                            <div class="bg-gray-50 p-2 rounded italic whitespace-pre-wrap break-words">${escapeHtml(invite.message || 'Без сообщения')}</div>
+                        </div>
+                        <div class="border-b pb-2">
+                            <p class="font-bold">Отправлено:</p>
+                            <p>${new Date(invite.timestamp * 1000).toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Статус:</p>
+                            <p><span class="px-2 py-0.5 rounded text-xs ${
+                                invite.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                invite.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                            }">${invite.status}</span>${isExpired ? ' <span class="text-red-500">(Истекло)</span>' : ''}</p>
+                        </div>
+                    `;
+                    if (invite.status === 'pending' && !isExpired) {
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'flex gap-2 mt-4';
+                        actionsDiv.innerHTML = `<button id="modalRevokeBtn" class="flex-1 bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">↩ Отозвать</button>`;
+                        content.appendChild(actionsDiv);
+                        document.getElementById('modalRevokeBtn').onclick = () => { revokeInvite(inviteId); };
+                    }
+                }
+            } else {
+                document.getElementById('inviteDetailContent').innerHTML = `<div class="text-center text-red-500">❌ ${data.error || 'Ошибка загрузки'}</div>`;
+            }
+        } catch (error) {
+            console.error('Failed to fetch invite details:', error);
+            document.getElementById('inviteDetailContent').innerHTML = `<div class="text-center text-red-500">❌ Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    function closeInviteDetail() {
+        document.getElementById('inviteDetailModal').classList.add('hidden');
+        document.getElementById('inviteDetailModal').classList.remove('flex');
+        currentDetailInviteId = null;
+        currentDetailType = null;
+    }
+
+    // =========================================================================
+    // Переключение вкладок
+    // =========================================================================
+
+    function switchTab(tab) {
+        currentTab = tab;
+        const tabIncoming = document.getElementById('tab-incoming');
+        const tabOutgoing = document.getElementById('tab-outgoing');
+        const container = document.getElementById('invitesContainer');
+
+        if (tab === 'incoming') {
+            tabIncoming.className = 'flex-1 py-2 bg-blue-500 text-white';
+            tabOutgoing.className = 'flex-1 py-2 bg-gray-200 text-gray-700';
+            container.innerHTML = '<div class="text-center text-gray-500 py-8">Загрузка...</div>';
+            loadIncomingInvites();
+        } else if (tab === 'outgoing') {
+            tabIncoming.className = 'flex-1 py-2 bg-gray-200 text-gray-700';
+            tabOutgoing.className = 'flex-1 py-2 bg-blue-500 text-white';
+            container.innerHTML = '<div class="text-center text-gray-500 py-8">Загрузка...</div>';
+            loadOutgoingInvites();
+        }
+    }
+
+    // =========================================================================
+    // Инициализация
+    // =========================================================================
+
+    if (templateToken && templateToken !== 'None' && templateToken.length > 10) {
+        sessionStorage.setItem('duonet_token', templateToken);
+    } else {
+        const cookieToken = getCookie('token');
+        if (cookieToken) {
+            sessionStorage.setItem('duonet_token', cookieToken);
+        }
+    }
+
+    document.getElementById('tab-incoming').onclick = () => switchTab('incoming');
+    document.getElementById('tab-outgoing').onclick = () => switchTab('outgoing');
+    document.getElementById('closeInviteDetailBtn').onclick = closeInviteDetail;
+    document.getElementById('inviteDetailModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('inviteDetailModal')) closeInviteDetail();
+    });
+
+    switchTab('incoming');
+</script>
+{% endblock %}

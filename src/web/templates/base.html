@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuoNet - {% block title %}Secure Messenger{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/duonet-logo.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
+        }
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0) !important;
+            }
+        }
+        .message-bubble {
+            max-width: 70%;
+        }
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #9ca3af;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+        .notification-badge {
+            position: relative;
+        }
+        .notification-badge::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <!-- Mobile menu button -->
+    <div class="md:hidden fixed top-4 left-4 z-50">
+        <button id="menu-toggle" class="p-2 rounded-md bg-white shadow-md">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-40 transform -translate-x-full md:translate-x-0">
+        <div class="p-6">
+            <div class="flex items-center justify-center mb-6">
+                <img src="/static/duonet-logo.png" alt="DuoNet" class="h-12 w-auto">
+            </div>
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-xl font-bold text-blue-600">DuoNet</h1>
+                <div class="md:hidden">
+                    <button id="menu-close" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {% if user %}
+            <div class="mb-6 p-3 bg-gray-50 rounded-lg">
+                <p class="text-xs text-gray-500">Вы вошли как</p>
+                <p class="text-sm font-mono break-all">{{ user.public_id }}</p>
+            </div>
+            {% endif %}
+
+            <nav class="space-y-2">
+                {% if not user %}
+                <a href="/accounts" class="block px-4 py-2 rounded hover:bg-gray-100 transition">👤 Аккаунты</a>
+                {% endif %}
+                {% if user %}
+                    {% if not user.is_server %}
+                    <a href="/invites" class="block px-4 py-2 rounded hover:bg-gray-100 transition">✉️ Приглашения</a>
+                    <hr class="my-4">
+                    {% endif %}
+                <a href="/logout" class="block px-4 py-2 rounded bg-red-50 text-red-600 hover:bg-red-100 transition">🚪 Выйти</a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="md:ml-64 min-h-screen">
+        <div class="container mx-auto px-4 py-8">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuClose = document.getElementById('menu-close');
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.remove('sidebar-hidden');
+                sidebar.classList.add('translate-x-0');
+            });
+        }
+
+        if (menuClose) {
+            menuClose.addEventListener('click', () => {
+                sidebar.classList.add('sidebar-hidden');
+                sidebar.classList.remove('translate-x-0');
+            });
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth < 768) {
+                if (!sidebar.contains(e.target) && !menuToggle?.contains(e.target)) {
+                    sidebar.classList.add('sidebar-hidden');
+                    sidebar.classList.remove('translate-x-0');
+                }
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

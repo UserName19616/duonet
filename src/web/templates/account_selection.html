@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Выбор аккаунта{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center">Выберите аккаунт</h2>
+
+    <div class="space-y-3 mb-6">
+        {% for account in accounts %}
+        <div class="border rounded-lg p-4 cursor-pointer transition {% if account.is_server %}bg-gray-100 hover:bg-gray-200{% else %}hover:bg-gray-50{% endif %}"
+             onclick="selectAccount('{{ account.server_id if account.is_server else account.public_id }}', {{ account.is_server|tojson }})">
+            <div class="flex items-center">
+                <div class="text-2xl mr-3">
+                    {% if account.is_server %}🖥️{% else %}📱{% endif %}
+                </div>
+                <div>
+                    <div class="font-bold">
+                        {% if account.is_server %}
+                            {{ account.server_id }}
+                        {% else %}
+                            {{ account.public_id }}
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        {% if account.is_server %}
+                            Серверный аккаунт
+                        {% else %}
+                            Клиентский аккаунт
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-4 space-y-3">
+        {% if can_create_client %}
+        <button id="btn-new-client" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition">
+            + Создать клиентский аккаунт ({{ client_count }}/{{ max_clients }})
+        </button>
+        {% else %}
+        <div class="text-center text-gray-500 py-2 px-4 border border-gray-300 rounded bg-gray-50">
+            📊 Достигнут лимит клиентских аккаунтов ({{ client_count }}/{{ max_clients }})
+        </div>
+        {% endif %}
+
+        <a href="/logout" class="block text-center text-gray-600 hover:text-gray-800 mt-4">
+            Выйти
+        </a>
+    </div>
+</div>
+
+<!-- Модальное окно для ввода сид-фразы и пароля -->
+<div id="loginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:10px; width:350px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <h3 class="text-xl font-bold mb-4 text-center">Введите данные</h3>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Сид-фраза</label>
+            <input type="password" id="modal_seed" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500" autocomplete="off">
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Пароль</label>
+            <input type="password" id="modal_password" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500" autocomplete="off">
+        </div>
+        <div class="flex space-x-2">
+            <button id="modal_submit" class="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">Войти</button>
+            <button id="modal_cancel" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400 transition">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingAccountId = null;
+let pendingIsServer = null;
+
+async function selectAccount(accountId, isServer) {
+    pendingAccountId = accountId;
+    pendingIsServer = isServer;
+
+    // Очищаем поля
+    document.getElementById('modal_seed').value = '';
+    document.getElementById('modal_password').value = '';
+
+    // Показываем модальное окно
+    document.getElementById('loginModal').style.display = 'block';
+    document.getElementById('modal_seed').focus();
+}
+
+// Обработчик кнопки "Войти"
+document.getElementById('modal_submit').addEventListener('click', async () => {
+    const seedPhrase = document.getElementById('modal_seed').value.trim();
+    const password = document.getElementById('modal_password').value;
+
+    if (!seedPhrase) {
+        alert('Сид-фраза обязательна');
+        return;
+    }
+    if (!password) {
+        alert('Пароль обязателен');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/web/login-by-id', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                public_id: pendingAccountId,
+                password: password,
+                seed_phrase: seedPhrase
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (pendingIsServer) {
+                window.location.replace('/monitor');
+            } else {
+                window.location.replace('/chat');
+            }
+        } else {
+            alert('Ошибка входа: ' + (data.error || 'Неверный пароль или сид-фраза'));
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+
+    document.getElementById('loginModal').style.display = 'none';
+});
+
+// Обработчик кнопки "Отмена"
+document.getElementById('modal_cancel').addEventListener('click', () => {
+    document.getElementById('loginModal').style.display = 'none';
+    pendingAccountId = null;
+    pendingIsServer = null;
+});
+
+// Закрытие по клавише Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('loginModal').style.display === 'block') {
+        document.getElementById('modal_cancel').click();
+    }
+});
+
+// Кнопка "Создать клиентский аккаунт"
+const newClientBtn = document.getElementById('btn-new-client');
+if (newClientBtn) {
+    newClientBtn.addEventListener('click', () => {
+        window.location.href = '/register';
+    });
+}
+</script>
+{% endblock %}

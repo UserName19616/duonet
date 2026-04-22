@@ -1,0 +1,164 @@
+================================================================================
+                        DUONET COMMUNITY CHARTER
+================================================================================
+
+⚠️ IMPORTANT: This Charter is a SOCIAL CONTRACT, not a legal document.
+   It describes the values and expectations of the DuoNet community.
+   There is no central authority to enforce it — only the collective choice
+   of participants to trust and cooperate with each other.
+
+================================================================================
+
+PREAMBLE
+
+We, the participants of the DuoNet network — developers, server operators,
+proxy node owners, and messenger users — taking into account that:
+
+• Technology is a tool, not a subject of legal relations.
+• No one shall be deprived of the right to privacy, secrecy of correspondence,
+  and free dissemination of information.
+• Technology cannot and should not act as a judge in disputes between people.
+• Responsibility for the use of the tool lies with the user.
+• Development of the technology is possible only under the condition of its
+  openness and inalienability.
+• Decentralization is the foundation of the service's sustainability and
+  accessibility.
+
+Hereby adopt this Charter as a statement of the principles underlying the
+DuoNet technology.
+
+================================================================================
+
+ARTICLE 1. STATUS OF TECHNOLOGY — PUBLIC DOMAIN
+
+1.1. The DuoNet technology, including its source code, algorithms, protocols,
+and architectural solutions, is recognized as inalienable heritage belonging
+to all humanity (public domain).
+
+1.2. No one has the right to: appropriate the technology or its parts; restrict
+access to it; hinder its use; register patent or other exclusive rights on its
+components.
+
+1.3. Everyone has the right to: study, modify, and distribute the technology;
+create new services and applications based on it; use it for any lawful purposes.
+
+1.4. Legally, the status of inalienable heritage is realized through:
+distribution of the source code under the GNU Affero General Public License
+v3.0 (AGPL-3.0) or any later version; the requirement that any modification
+or derivative work retain the status of inalienable heritage; the prohibition
+of patenting algorithms and methods implemented in DuoNet.
+
+1.5. Reproducibility. If the original development team ceases the project's
+development for any reason, this Charter and the open code serve as the basis
+for continuation of development by any interested persons.
+
+================================================================================
+
+ARTICLE 2. PRINCIPLES
+
+2.1. Equality of Participants. All network participants possess equal rights.
+Differences in technical roles do not create a hierarchy of rights or privileges.
+
+2.2. Free Basic Functions. Messaging and information protection are always
+available to everyone free of charge.
+
+2.3. Voluntary Participation. Participation in the network is voluntary.
+
+2.4. Decentralization. The network has no single center of control.
+
+2.5. User Responsibility. Each participant is independently responsible for
+their actions.
+
+================================================================================
+
+ARTICLE 3. RIGHTS OF PARTICIPANTS
+
+3.1. Right to privacy and secrecy of correspondence.
+3.2. Right to freely transmit and receive information.
+3.3. Right to use own property to provide services to other participants.
+3.4. Right to create modifications and distribute them.
+3.5. Right to demand compensation for damages.
+3.6. Right of server operator to establish additional restrictions on the use
+     of their server.
+
+================================================================================
+
+ARTICLE 4. OBLIGATIONS OF PARTICIPANTS
+
+4.1. Respect the rights of other participants.
+4.2. Do not use the technology to commit unlawful actions.
+4.3. Do not hinder access of others to the technology.
+4.4. Maintain the open status of the technology when creating modifications.
+4.5. Limit on Server Users. The server operator undertakes not to serve more
+     than 450 unique users per day.
+4.6. Upon reaching the limit, the server shall direct new users to other
+     available servers.
+4.7. The proxy server operator is not responsible for the content of traffic
+     transmitted through their server.
+
+================================================================================
+
+ARTICLE 5. ACCEPTANCE OF THE CHARTER
+
+5.1. Use of the DuoNet network is possible only after acceptance of this Charter.
+
+5.2. Acceptance is carried out by selecting one of two options in the client
+application interface: "I Accept the Charter" or "I Do Not Accept the Charter".
+
+5.3. The fact of acceptance is fixed by a cryptographic signature using the
+participant's private key.
+
+5.4. Acceptance of the Charter is voluntary. Refusal entails no consequences
+other than the inability to use the network.
+
+================================================================================
+
+ARTICLE 6. LIABILITY AND PRECEDENT
+
+6.1. This Charter does not create a system of moderation, bans, or other
+control mechanisms.
+
+6.2. The DuoNet Community is not a legal entity.
+
+6.3. In the event that a participant's actions are recognized as unlawful,
+victims have the right to demand compensation, and server operators have the
+right to refuse service.
+
+6.4. If DuoNet technology is recognized as illegal in any territory, the
+responsible participants bear liability for damages.
+
+6.5. Project Reproduction. Any participant has the right to continue the
+project if development ceases.
+
+================================================================================
+
+ARTICLE 7. RELATION TO NATIONAL LEGISLATION
+
+7.1. The participant independently bears responsibility for compliance with
+local laws.
+
+7.2. No one has the right to demand that other participants violate their
+countries' laws.
+
+================================================================================
+
+ARTICLE 8. AMENDMENTS TO THE CHARTER
+
+8.1. Amendments take effect upon publication. A participant who disagrees may
+cease using the network.
+
+8.2. The basic principles in Articles 1–4 cannot be changed.
+
+8.3. Amendments are published in open access.
+
+================================================================================
+
+FINAL PROVISIONS
+
+9.1. This Charter comes into force from the moment of its publication.
+
+9.2. All previous versions become void but are retained in the archive.
+
+--------------------------------------------------------------------------------
+Adopted by the DuoNet Community — March 31, 2026
+--------------------------------------------------------------------------------

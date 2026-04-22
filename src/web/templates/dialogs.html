@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Диалоги{% endblock %}
+
+{% block content %}
+<style>
+    .dialog-item {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .dialog-item:hover {
+        background-color: #f3f4f6;
+        transform: translateX(4px);
+    }
+    .unread-badge {
+        background-color: #ef4444;
+        color: white;
+        border-radius: 9999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        font-weight: bold;
+        min-width: 20px;
+        text-align: center;
+    }
+    .last-message-preview {
+        font-size: 13px;
+        color: #6b7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+    }
+    .status-online {
+        color: #10b981;
+        font-size: 10px;
+    }
+    .status-offline {
+        color: #9ca3af;
+        font-size: 10px;
+    }
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+    <!-- Заголовок -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-white">💬 Диалоги</h1>
+            <button onclick="window.location.href='/contacts'"
+                    class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center gap-2">
+                <span>➕</span> Новый диалог
+            </button>
+        </div>
+        <p class="text-blue-100 text-sm mt-1">Ваш ID: {{ user.public_id }}</p>
+    </div>
+
+    <!-- Список диалогов -->
+    <div id="dialogs-container" class="divide-y divide-gray-200">
+        <div class="p-8 text-center">
+            <div class="loading-spinner"></div>
+            <p class="text-gray-500 mt-4">Загрузка диалогов...</p>
+        </div>
+    </div>
+
+    <!-- Пустое состояние -->
+    <div id="empty-state" style="display: none;" class="p-12 text-center">
+        <div class="text-6xl mb-4">💬</div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Нет диалогов</h3>
+        <p class="text-gray-500 mb-4">У вас пока нет активных диалогов</p>
+        <button onclick="window.location.href='/contacts'"
+                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+            Найти контакты
+        </button>
+    </div>
+</div>
+
+<script>
+    const token = "{{ token }}";
+    const currentUserId = "{{ user.public_id }}";
+
+    // Форматирование времени
+    function formatMessageTime(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp * 1000);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        if (msgDate.getTime() === today.getTime()) {
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } else if (msgDate.getTime() === today.getTime() - 86400000) {
+            return 'вчера';
+        } else {
+            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        }
+    }
+
+    // Экранирование HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Загрузка диалогов
+    async function loadDialogs() {
+        const container = document.getElementById('dialogs-container');
+        const emptyState = document.getElementById('empty-state');
+
+        try {
+            const response = await fetch('/api/web/dialogs-with-last-messages', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data.dialogs && result.data.dialogs.length > 0) {
+                let html = '';
+                for (const dialog of result.data.dialogs) {
+                    const statusClass = dialog.online ? 'status-online' : 'status-offline';
+                    const statusText = dialog.online ? '🟢 Онлайн' : '⚪ Офлайн';
+                    const unreadBadge = dialog.unread_count > 0 ?
+                        `<span class="unread-badge">${dialog.unread_count}</span>` : '';
+
+                    html += `
+                        <div class="dialog-item p-4 hover:bg-gray-50 transition"
+                             onclick="openChat('${escapeHtml(dialog.contact_id)}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                        ${escapeHtml(dialog.contact_name.charAt(0).toUpperCase())}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="font-semibold text-gray-800">${escapeHtml(dialog.contact_name)}</span>
+                                                <span class="text-xs ${statusClass} ml-2">${statusText}</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-xs text-gray-400">${formatMessageTime(dialog.last_message_time)}</span>
+                                                ${unreadBadge}
+                                            </div>
+                                        </div>
+                                        <div class="last-message-preview mt-1">
+                                            ${dialog.last_message ? '💬 ' + escapeHtml(dialog.last_message.substring(0, 60)) : '📭 Нет сообщений'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+                emptyState.style.display = 'none';
+            } else {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Failed to load dialogs:', error);
+            container.innerHTML = `
+                <div class="p-8 text-center text-red-500">
+                    ❌ Ошибка загрузки диалогов: ${error.message}
+                </div>
+            `;
+            emptyState.style.display = 'none';
+        }
+    }
+
+    // Открытие чата
+    function openChat(contactId) {
+        window.location.href = `/api/web/chat/${encodeURIComponent(contactId)}/page?token=${encodeURIComponent(token)}`;
+    }
+
+    // Загрузка при старте
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDialogs();
+
+        // Обновление каждые 30 секунд
+        setInterval(loadDialogs, 30000);
+    });
+</script>
+{% endblock %}

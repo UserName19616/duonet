@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center">Регистрация аккаунта</h2>
+    <form id="registerForm">
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Seed Phrase (or email + phrase)</label>
+            <input type="text" id="seed_phrase" required class="w-full px-3 py-2 border border-gray-300 rounded">
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Region</label>
+            <select id="region" class="w-full px-3 py-2 border border-gray-300 rounded">
+                <option value="ru">Russia (ru)</option>
+                <option value="us">USA (us)</option>
+                <option value="gb">UK (gb)</option>
+                <option value="de">Germany (de)</option>
+                <option value="fr">France (fr)</option>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Password (min 8 characters)</label>
+            <input type="password" id="password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded">
+        </div>
+        <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600">
+            Зарегистрироваться
+        </button>
+    </form>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Определяем, что создаем - клиентский или серверный
+    let isServer = true;
+
+    // Проверяем, есть ли уже серверный аккаунт
+    try {
+        const accountsResponse = await fetch('/api/auth/accounts');
+        const accounts = await accountsResponse.json();
+        const hasServer = accounts.some(acc => acc.is_server === true);
+        if (hasServer) {
+            isServer = false;  // Сервер уже есть, создаем клиента
+        }
+    } catch (e) {
+        console.error('Failed to check accounts', e);
+    }
+
+    const response = await fetch('/api/web/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            seed_phrase: document.getElementById('seed_phrase').value,
+            region: document.getElementById('region').value,
+            password: document.getElementById('password').value,
+            is_server: isServer
+        })
+    });
+    const data = await response.json();
+    if (data.success) {
+        // Всегда перенаправляем на страницу выбора аккаунтов
+        window.location.href = '/accounts';
+    } else {
+        alert('Registration failed: ' + data.error);
+    }
+});
+</script>
+{% endblock %}

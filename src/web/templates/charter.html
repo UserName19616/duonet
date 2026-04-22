@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Charter' if lang == 'en' else 'Устав' }}{% endblock %}
+
+{% block content %}
+<style>
+    .charter-section { margin-bottom: 1.5rem; }
+    .charter-title { font-weight: 700; font-size: 1.25rem; margin-top: 1.25rem; margin-bottom: 0.75rem; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 0.75rem; }
+    .charter-subtitle { font-weight: 700; font-size: 1.1rem; margin-top: 1rem; margin-bottom: 0.5rem; color: #1e40af; }
+    .charter-article { font-weight: 700; color: #1e293b; margin-top: 0.5rem; display: inline-block; }
+    .charter-text { margin-bottom: 0.5rem; line-height: 1.5; }
+    .charter-list { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+    .charter-list li { margin-bottom: 0.25rem; }
+    .warning-box {
+        background-color: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .warning-text {
+        font-size: 0.875rem;
+        color: #92400e;
+    }
+</style>
+
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-bold text-gray-800">
+            {{ 'DuoNet Community Charter' if lang == 'en' else 'Устав сообщества DuoNet' }}
+        </h1>
+        <div class="space-x-2">
+            <a href="/charter?lang=ru" class="px-3 py-1 rounded {% if lang == 'ru' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">RU</a>
+            <a href="/charter?lang=en" class="px-3 py-1 rounded {% if lang == 'en' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">EN</a>
+        </div>
+    </div>
+
+    <!-- SOCIAL CONTRACT WARNING -->
+    {% if lang == 'en' %}
+    <div class="warning-box">
+        <p class="warning-text">
+            ⚠️ <strong>IMPORTANT:</strong> This Charter is a <strong>SOCIAL CONTRACT</strong>, not a legal document.
+            It describes the values and expectations of the DuoNet community.
+            There is no central authority to enforce it — only the collective choice
+            of participants to trust and cooperate with each other.
+        </p>
+    </div>
+    {% else %}
+    <div class="warning-box">
+        <p class="warning-text">
+            ⚠️ <strong>ВАЖНО:</strong> Этот Устав — это <strong>СОЦИАЛЬНЫЙ КОНТРАКТ</strong>, а не юридический документ.
+            Он описывает ценности и ожидания сообщества DuoNet.
+            Нет центрального органа для его принудительного исполнения — только
+            коллективный выбор участников доверять и сотрудничать друг с другом.
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="mb-8" style="max-height: 36vh; overflow-y: auto;">
+        {% if lang == 'en' %}
+            <div class="charter-section">
+                <div class="charter-title">PREAMBLE</div>
+                <p class="charter-text">We, the participants of the DuoNet network — developers, server operators, proxy node owners, and messenger users — taking into account that:</p>
+                <ul class="charter-list">
+                    <li>Technology is a tool, not a subject of legal relations.</li>
+                    <li>No one shall be deprived of the right to privacy, secrecy of correspondence, and free dissemination of information.</li>
+                    <li>Technology cannot and should not act as a judge in disputes between people.</li>
+                    <li>Responsibility for the use of the tool lies with the user.</li>
+                    <li>Development of the technology is possible only under the condition of its openness and inalienability.</li>
+                    <li>Decentralization is the foundation of the service's sustainability and accessibility.</li>
+                </ul>
+                <p class="charter-text">Hereby adopt this Charter as a statement of the principles underlying the DuoNet technology.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 1. STATUS OF TECHNOLOGY — PUBLIC DOMAIN</div>
+                <p class="charter-text"><strong class="charter-article">1.1.</strong> The DuoNet technology, including its source code, algorithms, protocols, and architectural solutions, is recognized as inalienable heritage belonging to all humanity (hereinafter referred to as <strong>public domain</strong>).</p>
+                <p class="charter-text"><strong class="charter-article">1.2.</strong> No one has the right to: appropriate the technology or its parts; restrict access to it; hinder its use; register patent or other exclusive rights on its components.</p>
+                <p class="charter-text"><strong class="charter-article">1.3.</strong> Everyone has the right to: study, modify, and distribute the technology; create new services and applications based on it; use it for any lawful purposes.</p>
+                <p class="charter-text"><strong class="charter-article">1.4.</strong> Legally, the status of inalienable heritage is realized through: distribution of the source code under the <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong> or any later version; the requirement that any modification or derivative work retain the status of inalienable heritage; the prohibition of patenting algorithms and methods implemented in DuoNet.</p>
+                <p class="charter-text"><strong class="charter-article">1.5. Reproducibility.</strong> If the original development team ceases the project's development for any reason, this Charter and the open code serve as the basis for continuation of development by any interested persons.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 2. PRINCIPLES</div>
+                <p class="charter-text"><strong class="charter-article">2.1. Equality of Participants.</strong> All network participants possess equal rights. Differences in technical roles do not create a hierarchy of rights or privileges.</p>
+                <p class="charter-text"><strong class="charter-article">2.2. Free Basic Functions.</strong> Messaging and information protection are always available to everyone free of charge.</p>
+                <p class="charter-text"><strong class="charter-article">2.3. Voluntary Participation.</strong> Participation in the network is voluntary.</p>
+                <p class="charter-text"><strong class="charter-article">2.4. Decentralization.</strong> The network has no single center of control.</p>
+                <p class="charter-text"><strong class="charter-article">2.5. User Responsibility.</strong> Each participant is independently responsible for their actions.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 3. RIGHTS OF PARTICIPANTS</div>
+                <p class="charter-text"><strong class="charter-article">3.1.</strong> Right to privacy and secrecy of correspondence.</p>
+                <p class="charter-text"><strong class="charter-article">3.2.</strong> Right to freely transmit and receive information.</p>
+                <p class="charter-text"><strong class="charter-article">3.3.</strong> Right to use own property to provide services to other participants.</p>
+                <p class="charter-text"><strong class="charter-article">3.4.</strong> Right to create modifications and distribute them.</p>
+                <p class="charter-text"><strong class="charter-article">3.5.</strong> Right to demand compensation for damages.</p>
+                <p class="charter-text"><strong class="charter-article">3.6.</strong> Right of server operator to establish additional restrictions on the use of their server.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 4. OBLIGATIONS OF PARTICIPANTS</div>
+                <p class="charter-text"><strong class="charter-article">4.1.</strong> Respect the rights of other participants.</p>
+                <p class="charter-text"><strong class="charter-article">4.2.</strong> Do not use the technology to commit unlawful actions.</p>
+                <p class="charter-text"><strong class="charter-article">4.3.</strong> Do not hinder access of others to the technology.</p>
+                <p class="charter-text"><strong class="charter-article">4.4.</strong> Maintain the open status of the technology when creating modifications.</p>
+                <p class="charter-text"><strong class="charter-article">4.5. Limit on Server Users.</strong> The server operator undertakes not to serve more than <strong>450 unique users per day</strong>.</p>
+                <p class="charter-text"><strong class="charter-article">4.6.</strong> Upon reaching the limit, the server shall direct new users to other available servers.</p>
+                <p class="charter-text"><strong class="charter-article">4.7.</strong> The proxy server operator is not responsible for the content of traffic transmitted through their server.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 5. ACCEPTANCE OF THE CHARTER</div>
+                <p class="charter-text"><strong class="charter-article">5.1.</strong> Use of the DuoNet network is possible only after acceptance of this Charter.</p>
+                <p class="charter-text"><strong class="charter-article">5.2.</strong> Acceptance is carried out by selecting one of two options in the client application interface: <strong>"I Accept the Charter"</strong> or <strong>"I Do Not Accept the Charter"</strong>.</p>
+                <p class="charter-text"><strong class="charter-article">5.3.</strong> The fact of acceptance is fixed by a cryptographic signature using the participant's private key.</p>
+                <p class="charter-text"><strong class="charter-article">5.4.</strong> Acceptance of the Charter is voluntary. Refusal entails no consequences other than the inability to use the network.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 6. LIABILITY AND PRECEDENT</div>
+                <p class="charter-text"><strong class="charter-article">6.1.</strong> This Charter does not create a system of moderation, bans, or other control mechanisms.</p>
+                <p class="charter-text"><strong class="charter-article">6.2.</strong> The DuoNet Community is not a legal entity.</p>
+                <p class="charter-text"><strong class="charter-article">6.3.</strong> In the event that a participant's actions are recognized as unlawful, victims have the right to demand compensation, and server operators have the right to refuse service.</p>
+                <p class="charter-text"><strong class="charter-article">6.4.</strong> If DuoNet technology is recognized as illegal in any territory, the responsible participants bear liability for damages.</p>
+                <p class="charter-text"><strong class="charter-article">6.5. Project Reproduction.</strong> Any participant has the right to continue the project if development ceases.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 7. RELATION TO NATIONAL LEGISLATION</div>
+                <p class="charter-text"><strong class="charter-article">7.1.</strong> The participant independently bears responsibility for compliance with local laws.</p>
+                <p class="charter-text"><strong class="charter-article">7.2.</strong> No one has the right to demand that other participants violate their countries' laws.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ARTICLE 8. AMENDMENTS TO THE CHARTER</div>
+                <p class="charter-text"><strong class="charter-article">8.1.</strong> Amendments take effect upon publication. A participant who disagrees may cease using the network.</p>
+                <p class="charter-text"><strong class="charter-article">8.2.</strong> The basic principles in Articles 1–4 cannot be changed.</p>
+                <p class="charter-text"><strong class="charter-article">8.3.</strong> Amendments are published in open access.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">FINAL PROVISIONS</div>
+                <p class="charter-text"><strong class="charter-article">9.1.</strong> This Charter comes into force from the moment of its publication.</p>
+                <p class="charter-text"><strong class="charter-article">9.2.</strong> All previous versions become void but are retained in the archive.</p>
+                <hr class="my-4">
+                <p class="charter-text"><em>Adopted by the DuoNet Community — March 31, 2026</em></p>
+            </div>
+        {% else %}
+            <div class="charter-section">
+                <div class="charter-title">ПРЕАМБУЛА</div>
+                <p class="charter-text">Мы, участники сети DuoNet — разработчики, операторы серверов, владельцы прокси-узлов и пользователи мессенджера, — принимая во внимание, что:</p>
+                <ul class="charter-list">
+                    <li>Технология является инструментом, а не субъектом правоотношений.</li>
+                    <li>Никто не может быть лишен права на частную жизнь, тайну переписки и свободное распространение информации.</li>
+                    <li>Технология не может и не должна быть судьей в спорах между людьми.</li>
+                    <li>Ответственность за использование инструмента лежит на том, кто его использует.</li>
+                    <li>Развитие технологии возможно только при условии ее открытости и неотчуждаемости.</li>
+                    <li>Децентрализация является основой устойчивости и доступности сервиса.</li>
+                </ul>
+                <p class="charter-text">принимаем настоящий Устав как изложение принципов, на которых основана технология DuoNet.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 1. СТАТУС ТЕХНОЛОГИИ — ОБЩЕСТВЕННОЕ ДОСТОЯНИЕ</div>
+                <p class="charter-text"><strong class="charter-article">1.1.</strong> Технология DuoNet признается неотчуждаемым достоянием, принадлежащим всему человечеству (<strong>общественное достояние</strong>).</p>
+                <p class="charter-text"><strong class="charter-article">1.2.</strong> Никто не вправе: присвоить технологию; ограничивать доступ к ней; препятствовать ее использованию; оформлять патентные или иные исключительные права.</p>
+                <p class="charter-text"><strong class="charter-article">1.3.</strong> Каждый имеет право: изучать, модифицировать и распространять технологию; создавать на ее основе новые сервисы; использовать ее в любых законных целях.</p>
+                <p class="charter-text"><strong class="charter-article">1.4.</strong> Статус реализуется через: лицензию <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong>; требование сохранения открытого статуса модификаций; запрет на патентование алгоритмов DuoNet.</p>
+                <p class="charter-text"><strong class="charter-article">1.5. Воспроизводимость.</strong> Если исходная команда разработчиков прекращает развитие проекта, настоящий Устав и открытый код служат основанием для продолжения развития любыми заинтересованными лицами.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 2. ПРИНЦИПЫ</div>
+                <p class="charter-text"><strong class="charter-article">2.1. Равенство участников.</strong> Все участники сети обладают равными правами.</p>
+                <p class="charter-text"><strong class="charter-article">2.2. Бесплатность основных функций.</strong> Обмен сообщениями и защита информации всегда доступны каждому безвозмездно.</p>
+                <p class="charter-text"><strong class="charter-article">2.3. Добровольность.</strong> Участие в сети является добровольным.</p>
+                <p class="charter-text"><strong class="charter-article">2.4. Децентрализация.</strong> Сеть не имеет единого центра управления.</p>
+                <p class="charter-text"><strong class="charter-article">2.5. Ответственность пользователя.</strong> Каждый участник самостоятельно отвечает за свои действия.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 3. ПРАВА УЧАСТНИКОВ</div>
+                <p class="charter-text"><strong class="charter-article">3.1.</strong> Право на частную жизнь и тайну переписки.</p>
+                <p class="charter-text"><strong class="charter-article">3.2.</strong> Право свободно передавать и получать информацию.</p>
+                <p class="charter-text"><strong class="charter-article">3.3.</strong> Право использовать собственное имущество для предоставления услуг другим участникам.</p>
+                <p class="charter-text"><strong class="charter-article">3.4.</strong> Право создавать модификации технологии и распространять их.</p>
+                <p class="charter-text"><strong class="charter-article">3.5.</strong> Право требовать возмещения ущерба.</p>
+                <p class="charter-text"><strong class="charter-article">3.6.</strong> Право оператора сервера устанавливать дополнительные ограничения.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 4. ОБЯЗАННОСТИ УЧАСТНИКОВ</div>
+                <p class="charter-text"><strong class="charter-article">4.1.</strong> Уважать права других участников.</p>
+                <p class="charter-text"><strong class="charter-article">4.2.</strong> Не использовать технологию для совершения противоправных действий.</p>
+                <p class="charter-text"><strong class="charter-article">4.3.</strong> Не препятствовать доступу других к технологии.</p>
+                <p class="charter-text"><strong class="charter-article">4.4.</strong> Сохранять открытый статус технологии при создании модификаций.</p>
+                <p class="charter-text"><strong class="charter-article">4.5. Ограничение числа пользователей сервера.</strong> Оператор сервера обязуется не обслуживать более <strong>450 уникальных пользователей в сутки</strong>.</p>
+                <p class="charter-text"><strong class="charter-article">4.6.</strong> При достижении лимита сервер направляет новых пользователей к другим доступным серверам.</p>
+                <p class="charter-text"><strong class="charter-article">4.7.</strong> Оператор прокси-сервера не несет ответственности за содержание трафика.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 5. ПРИНЯТИЕ УСТАВА</div>
+                <p class="charter-text"><strong class="charter-article">5.1.</strong> Использование сети DuoNet возможно только после принятия настоящего Устава.</p>
+                <p class="charter-text"><strong class="charter-article">5.2.</strong> Принятие осуществляется путем выбора: <strong>«Принимаю Устав»</strong> или <strong>«Не принимаю Устав»</strong>.</p>
+                <p class="charter-text"><strong class="charter-article">5.3.</strong> Факт принятия фиксируется криптографической подписью приватного ключа участника.</p>
+                <p class="charter-text"><strong class="charter-article">5.4.</strong> Принятие Устава является добровольным. Отказ не влечет иных последствий, кроме невозможности использования сети.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 6. ОТВЕТСТВЕННОСТЬ И ПРЕЦЕДЕНТ</div>
+                <p class="charter-text"><strong class="charter-article">6.1.</strong> Устав не создает системы модерации, блокировок или иных механизмов контроля.</p>
+                <p class="charter-text"><strong class="charter-article">6.2.</strong> Сообщество DuoNet не является юридическим лицом.</p>
+                <p class="charter-text"><strong class="charter-article">6.3.</strong> При признании действий противоправными пострадавшие вправе требовать возмещения, операторы серверов вправе отказать в обслуживании.</p>
+                <p class="charter-text"><strong class="charter-article">6.4.</strong> Если технология DuoNet признается незаконной на какой-либо территории, ответственные участники несут ответственность за ущерб.</p>
+                <p class="charter-text"><strong class="charter-article">6.5. Воспроизводство проекта.</strong> Любой участник вправе продолжить развитие проекта при прекращении разработки.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 7. СООТНОШЕНИЕ С НАЦИОНАЛЬНЫМ ЗАКОНОДАТЕЛЬСТВОМ</div>
+                <p class="charter-text"><strong class="charter-article">7.1.</strong> Участник самостоятельно несет ответственность за соблюдение законов страны своего нахождения.</p>
+                <p class="charter-text"><strong class="charter-article">7.2.</strong> Никто не вправе требовать от других участников нарушения законов их стран.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">СТАТЬЯ 8. ИЗМЕНЕНИЕ УСТАВА</div>
+                <p class="charter-text"><strong class="charter-article">8.1.</strong> Изменения вступают в силу после опубликования. Несогласный участник вправе прекратить использование сети.</p>
+                <p class="charter-text"><strong class="charter-article">8.2.</strong> Базовые принципы (Статьи 1–4) не могут быть изменены.</p>
+                <p class="charter-text"><strong class="charter-article">8.3.</strong> Изменения публикуются в открытом доступе.</p>
+            </div>
+
+            <div class="charter-section">
+                <div class="charter-title">ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ</div>
+                <p class="charter-text"><strong class="charter-article">9.1.</strong> Настоящий Устав вступает в силу с момента его опубликования.</p>
+                <p class="charter-text"><strong class="charter-article">9.2.</strong> Все предыдущие версии устава утрачивают силу, но сохраняются в архиве.</p>
+                <hr class="my-4">
+                <p class="charter-text"><em>Принято сообществом DuoNet — 31 марта 2026 года</em></p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="flex justify-center space-x-4 pt-4 border-t">
+        <button id="btn-accept" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition">
+            {% if lang == 'en' %}✓ I Accept the Charter{% else %}✓ Принимаю Устав{% endif %}
+        </button>
+        <button id="btn-decline" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition">
+            {% if lang == 'en' %}✗ I Do Not Accept the Charter{% else %}✗ Не принимаю Устав{% endif %}
+        </button>
+    </div>
+</div>
+
+<script>
+    const lang = '{{ lang }}';
+
+    document.getElementById('btn-accept').addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/web/charter/accept', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accepted: true, lang: lang, version: '1.0' })
+            });
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/register';
+            } else {
+                alert(data.error || 'Acceptance failed');
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    });
+
+    document.getElementById('btn-decline').addEventListener('click', () => {
+        if (confirm('{% if lang == "en" %}You cannot use DuoNet without accepting the Charter. Exit?{% else %}Вы не можете использовать DuoNet без принятия Устава. Выйти?{% endif %}')) {
+            window.close();
+        }
+    });
+</script>
+{% endblock %}
