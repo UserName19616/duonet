@@ -63,3 +63,4 @@ __pycache__/
 scripts/publish_to_github.sh
 scripts/publish_github_simple.sh
 scripts/
+generate_dump.sh
