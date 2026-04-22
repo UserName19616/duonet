@@ -20,20 +20,31 @@ class DuoNetCrypto {
      * @returns {Promise<Array<string>>} Array of 16 keys in hex
      */
     static async generateKeyPool(sessionKeyHex, fromId, toId, poolSize = 16) {
+        // Нормализация входного параметра
+        let keyString = sessionKeyHex;
+        if (typeof sessionKeyHex !== 'string') {
+            if (sessionKeyHex instanceof Uint8Array) {
+                keyString = Array.from(sessionKeyHex).map(b => b.toString(16).padStart(2, '0')).join('');
+            } else if (sessionKeyHex && typeof sessionKeyHex === 'object' && sessionKeyHex.constructor === ArrayBuffer) {
+                keyString = Array.from(new Uint8Array(sessionKeyHex)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } else {
+                keyString = String(sessionKeyHex);
+            }
+        }
+
         console.log('[Crypto] generateKeyPool:', {
-            sessionKeyHex: sessionKeyHex?.substring(0, 20),
+            sessionKeyHex: keyString?.substring(0, 20),
             fromId,
             toId
         });
+
         const pool = [];
         const encoder = new TextEncoder();
 
-        // Create base seed: session key + dialog salt
         const dialogId = fromId < toId ? `${fromId}:${toId}` : `${toId}:${fromId}`;
         const dialogSalt = encoder.encode(dialogId);
 
-        // Import session key as HMAC key for HKDF
-        const keyBytes = new Uint8Array(sessionKeyHex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+        const keyBytes = new Uint8Array(keyString.match(/.{1,2}/g).map(b => parseInt(b, 16)));
         const baseKey = await crypto.subtle.importKey(
             "raw",
             keyBytes,
@@ -43,10 +54,8 @@ class DuoNetCrypto {
         );
 
         for (let i = 0; i < poolSize; i++) {
-            // HKDF: extract then expand
             const info = encoder.encode(`lottery_key_${i}_v2`);
 
-            // HKDF-Expand
             const hmacKey = await crypto.subtle.importKey(
                 "raw",
                 keyBytes,
@@ -61,7 +70,6 @@ class DuoNetCrypto {
                 this.concatArrays(dialogSalt, info)
             );
 
-            // Take first 32 bytes as pool key
             const poolKey = new Uint8Array(signature).slice(0, 32);
             const poolKeyHex = Array.from(poolKey).map(b => b.toString(16).padStart(2, '0')).join('');
             pool.push(poolKeyHex);

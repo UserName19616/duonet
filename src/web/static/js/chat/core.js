@@ -77,23 +77,19 @@ class DuoNetCore {
     }
 
     async loadSessionKey() {
-        const storedKey = DuoNetCrypto.getStoredSessionKey(this.dialogId);
-        if (storedKey) {
-            this.sessionKeyHex = storedKey;
-            this.activeKeys.old = storedKey;
-            return true;
-        }
-        try {
-            const response = await fetch(`/api/web/dialog/${this.contactId}/session-key`);
-            const result = await response.json();
-            if (result.success && result.data.session_key) {
-                this.sessionKeyHex = result.data.session_key;
-                this.activeKeys.old = result.data.session_key;
-                DuoNetCrypto.storeSessionKey(this.dialogId, this.sessionKeyHex);
-                return true;
+        const response = await fetch(`/api/web/dialog/${this.contactId}/session-key`);
+        const result = await response.json();
+        if (result.success && result.data.session_key) {
+            // Если пришёл объект, извлекаем my
+            let key = result.data.session_key;
+            if (typeof key === 'object' && key !== null) {
+                key = key.my || key.peer || Object.values(key)[0];
             }
-        } catch (error) {
-            console.error('Failed to load session key:', error);
+            this.sessionKeyHex = key;
+            this.activeKeys.old = key;
+            DuoNetCrypto.storeSessionKey(this.dialogId, this.sessionKeyHex);
+            console.log('[Core] Session key loaded:', this.sessionKeyHex.substring(0, 20));
+            return true;
         }
         return false;
     }
