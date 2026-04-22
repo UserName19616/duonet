@@ -286,9 +286,9 @@ Python-экосистеме за FastAPI, aiohttp и библиотеки кри
 📞 Контакты и поддержка
 Email автора: leha.nikolaev@gmail.com
 
-GitHub Issues: [Ссылка будет добавлена]
+GitHub Issues: https://github.com/UserName19616/duonet/issues
 
-Форум для обсуждений: [Ссылка будет добавлена]
+Форум для обсуждений: https://github.com/UserName19616/duonet/discussions
 
 ⭐ Если вам нравится проект, поставьте звезду на GitHub и поделитесь с другими!
 
