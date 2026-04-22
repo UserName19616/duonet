@@ -132,7 +132,7 @@ Users can run a proxy server on their home computer and invite others to use it.
 
 ```bash
 # Clone the repository (replace with actual URL)
-git clone https://github.com/YOUR_USERNAME/duonet.git
+git clone https://github.com/UserName19616/duonet.git
 cd duonet
 
 # Run the installer (creates venv, generates SSL certs, sets up databases)
@@ -239,7 +239,7 @@ Bug reports
 Development Setup
 bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/duonet.git
+git clone https://github.com/UserName19616/duonet.git
 cd duonet
 
 # Create a virtual environment
