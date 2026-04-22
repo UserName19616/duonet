@@ -46,3 +46,19 @@ htmlcov/
 
 # Data
 data/
+
+# Temporary and build files
+duonet.tar.gz
+project_dump_*.txt
+.pids_*
+.pytest_cache/
+.env
+logs/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc
+scripts/publish_to_github.sh
+scripts/publish_github_simple.sh
