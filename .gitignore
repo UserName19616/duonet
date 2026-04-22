@@ -62,3 +62,4 @@ __pycache__/
 *.pyc
 scripts/publish_to_github.sh
 scripts/publish_github_simple.sh
+scripts/
